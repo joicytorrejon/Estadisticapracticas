@@ -1,9 +1,9 @@
 ## Diccionario de datos
 La siguiente tabla presenta información descriptiva sobre los datos que se encuentran en  la base de datos: "DATA".
 
-| Nombre de la variable  |  Función | Escala |Indicador | Definición | Pregunta del Censo | Fuente de datos
-| :------------ |:---------------:| -----:|
-| Departamentos      | Unidad de análisis | Texto | | Nombre del departamento | | https://censos2017.inei.gob.pe/redatam/|
+| Nombre de la variable  |  Función           | Escala |Indicador | Definición | Pregunta del Censo | Fuente de datos |
+|------------------------|--------------------|--------|----------|------------|--------------------|-----------------|
+| Departamentos          | Unidad de análisis | Texto  |          | Nombre del departamento | | https://censos2017.inei.gob.pe/redatam/|
 |    et_quechua   | Variable independiente | Numérica| conteo| Número de personas que se autoidentifican como quechua | ¿Por sus costumbres y sus antepasados, ¿usted se siente o considera? |  https://censos2017.inei.gob.pe/redatam/ |
 |    et_aimara   | Variable independiente | Numérica| conteo| Número de personas que se autoidentifican como aimara | ¿Por sus costumbres y sus antepasados, ¿usted se siente o considera? |  https://censos2017.inei.gob.pe/redatam/ |
 |    et_amazonia   | Variable independiente | Numérica| conteo| Número de personas que se autoidentifican como nativo o indígena de la amazonía | ¿Por sus costumbres y sus antepasados, ¿usted se siente o considera? |  https://censos2017.inei.gob.pe/redatam/ |
