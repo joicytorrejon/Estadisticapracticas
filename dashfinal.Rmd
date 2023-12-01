@@ -1,0 +1,786 @@
+---
+title: "Análisis de la alfabetización de la comunidad indígena y originaria en el Perú"
+author: Joicy Torrejon & Gianfranco Risso
+output: 
+  flexdashboard::flex_dashboard:
+    social: menu
+    source_code: embed
+---
+
+
+1. Introducción {data-icon="fa-signal"}
+===================================== 
+
+Column {data-width= 700}
+-----------------------------------------------------------------------
+
+```{r}
+library(tmap) #Dibujar el mapa
+library(sf) #Para leer el shapefile y reducir el tamaño del archivo
+library(pryr) #Calcular el tamaño del archivo
+library(readr) #para cargar csv
+library(base) # para merge
+library(reshape2) # para hacer dcast
+library(plyr) # para mineria en csv 
+library(dplyr) # para inner join
+library(readxl)
+library(shinyMobile)
+```
+
+
+```{r}
+library(rio)
+data=import("dataalfabetizacion.xlsx")
+```
+
+
+
+```{r, include=FALSE}
+setwd("C:/Users/joicy/Downloads/trabajo")
+
+shp_departamentos <- st_read("DEPARTAMENTOS_inei_geogpsperu_suyopomalia/DEPARTAMENTOS_inei_geogpsperu_suyopomalia.shp")
+
+```
+
+
+```{r}
+shp_departamentos <- inner_join(shp_departamentos,data,by="NOMBDEP")
+```
+
+```{r}
+
+tmap_mode("view")
+```
+
+
+```{r}
+tm_shape(shp_departamentos) +
+  tm_fill("p_alfabetizacion", id="NOMBDEP", palette = "Oranges", style="quantile", title="% alfabetización") +
+  tm_borders("grey25", alpha=.05) + 
+  tm_layout("Porcentaje de alfabetización de la población indígena y originaria por departamento en 2017",
+            main.title.position = "center") + tm_view(view.legend.position = c("left","bottom") #esto sirve para bajar la leyenda y que no estorbe con el título 
+            )
+
+tmap_last <- tmap_last()
+
+```
+
+
+Column {data-width= 300}
+-----------------------------------------------------------------------
+
+### Introducción
+
+
+* **Problema observado:** 
+
+
+Existe una brecha de alfabetización en comunidades indígenas y originarias en Perú a nivel departamental, el cual es un problema complejo y multifacético.
+Las comunidades indígenas y originarias son las más afectadas porque tienen menos acceso a la educación formal y a los recursos lingüísticos adecuados (CEPAL, 2002).
+En Perú, la población indígena representa aproximadamente el 20% de la población total del país (INEI, 2017).
+El gobierno peruano ha implementado políticas de educación intercultural bilingüe (EIB) para abordar esta brecha educativa entre la población indígena y la rest de la población. Sin embargo, aún existen desafíos en términos de cobertura, calidad de la enseñanza y disponibilidad de docentes capacitados en estas áreas (MINEDU, 2009).
+
+
+* **Pregunta de investigación:**
+
+¿Qué factores afectan a la tasa de
+alfabetización de los pueblos indígenas peruanos a nivel de departamentos?
+
+* **Justificación:**
+
+El tema elegido es relevante porque, en un sentido teórico, mediante la investigación del mismo se puede progresar en la comprensión académica de la educación y la alfabetización en contextos indígenas. Esto puede conducir a la formación de marcos teóricos y conceptuales que puedan aplicarse en futuras investigaciones sobre las comunidades indígenas. Asimismo, la investigación sobre los distintos factores que influyen en la alfabetización de estos pueblos nos puede ayudar a comprender la situación general de la sociedad peruana en cuestiones como la desigualdad social y el nivel de alcance que el Estado tiene en estas comunidades.
+
+Por otro lado, desde un sentido más práctico, la información obtenida mediante esta investigación facilitaría la aplicación de políticas públicas por parte del Estado y mostraría de manera más clara los aspectos que más refuerzo necesitan para lograr un mayor nivel de alfabetización en las comunidades indígenas del país, así como el nivel de eficacia de los programas estatales en estas comunidades.
+Mejorar la tasa de alfabetización de estos pueblos significaría una reducción en la brecha educativa existente en el Perú y, por ende, un aumento de las oportunidades de vida de estas poblaciones. De igual forma, con información más clara sobre su situación las comunidades indígenas podrían participar más activamente de la protección de sus derechos y del fomento de la alfabetización en sus mismos territorios. Por último, la alfabetización puede contribuir con la preservación de la cultura, las lenguas y las identidades de los pueblos indígenas.
+
+
+* **Hipótesis:**
+
+A nivel departamental, el porcentaje de alfabetismo está afectado por el porcentaje de personas nativas que asisten actualmente a un centro educativo, la cantidad de lenguas nativas habladas, el porcentaje de personas que hablan lenguas nativas, el porcentaje de población femenina, el porcentaje de personas que viven en el área rural, el porcentaje de personas que sufren una discapacidad motora, el porcentaje de personas que sufren una discapacidad intelectual y el porcentaje de hogares que tienen acceso a internet.
+
+
+
+
+
+2. Variable central {data-icon="fa-signal"}
+===================================== 
+
+Column {data-width=500} {.tabset}
+-----------------------------------------------------------------------
+
+### Histograma del porcentaje de alfabetización
+
+```{r}
+
+library(ggplot2)
+
+baseHist= ggplot(data=data, aes(x=p_alfabetizacion))
+histoAlfa=baseHist + geom_histogram(bins=8) + xlab("Porcentaje de alfabetización de personas nativas") +
+  ylab("Frecuencia")+ ggtitle ("Histograma del porcentaje de alfabetización según el censo del 2017") +
+  geom_vline(xintercept = 87.68, color = "red")+
+  geom_vline(xintercept = 89.5, color = "green")
+histoAlfa
+```
+
+
+
+### Boxplot por región
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+data = data |>
+  mutate(Region = case_when(
+    NOMBDEP=="AMAZONAS"~"Selva",
+    NOMBDEP=="ANCASH"~"Sierra",
+    NOMBDEP=="APURIMAC"~"Sierra",
+    NOMBDEP=="AREQUIPA"~"Sierra",
+    NOMBDEP=="AYACUCHO"~"Sierra",
+    NOMBDEP=="CAJAMARCA"~"Sierra",
+    NOMBDEP=="CUSCO"~"Sierra",
+    NOMBDEP=="CALLAO"~"Costa",
+    NOMBDEP=="HUANCAVELICA"~"Sierra",
+    NOMBDEP=="HUANUCO"~"Selva",
+    NOMBDEP=="ICA"~"Costa",
+    NOMBDEP=="JUNIN"~"Sierra",
+    NOMBDEP=="LA LIBERTAD"~"Costa",
+    NOMBDEP=="LAMBAYEQUE"~"Costa",
+    NOMBDEP=="LIMA"~"Costa",
+    NOMBDEP=="LORETO"~"Selva",
+    NOMBDEP=="MADRE DE DIOS"~"Selva",
+    NOMBDEP=="MOQUEGUA"~"Costa",
+    NOMBDEP=="PASCO"~"Sierra",
+    NOMBDEP=="PIURA"~"Costa",
+    NOMBDEP=="PUNO"~"Sierra",
+    NOMBDEP=="SAN MARTIN"~"Selva",
+    NOMBDEP=="TACNA"~"Costa",
+    NOMBDEP=="TUMBES"~"Costa",
+    NOMBDEP=="UCAYALI"~"Selva"
+  )) 
+
+```
+
+```{r}
+data$Region=as.factor(data$Region)
+```
+
+
+```{r}
+ggplot(data, aes(y=p_alfabetizacion, x=Region))+
+  geom_boxplot()+
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 20))+
+  ylab("% de alfabetización personas nativas")+
+  xlab("Región")+ ggtitle("Boxplot de % de alfabetización por región según censo de 2017") +
+  theme_get()
+```
+
+
+Column {data-width=500} {.tabset}
+-----------------------------------------------------------------------
+
+### Tabla de frecuencias
+
+```{r}
+
+# Tabla de frecuencias
+
+TF_Alfa=summary(data$p_alfabetizacion)
+TF_Alfa
+
+```
+
+
+* **Histograma:** 
+
+En el histograma de la variable central se ven indicios de que esta no sigue una distribución normal.
+
+En promedio, en el Perú el 87.68% de personas pertenecientes a comunidades indígenas y originarias sabe leer y escribir.
+
+En el 50% de departamentos, el porcentaje de personas pertenecientes a comunidades indígenas y originarias que saben leer y escribir varía entre 41.3 y 89.5%.
+
+
+* **Boxplot:**
+
+
+En el boxplot, observamos que los valores de alfabetización de comunidades nativas e indígenas se encuentran más dispersos en el caso de los departamentos de la Sierra, mientras que, en la Costa se observa más homogeneidad.
+
+
+ La costa en promedio tiene un mayor porcentaje de alfabetización de comunidades nativas. Mientras que, la Sierra y Selva presentan valores más similares.
+
+
+3. Correlación (VD vs VIs) {data-icon="fa-signal"}
+===================================== 
+
+Column {data-width=750} {.tabset}
+-----------------------------------------------------------------------
+
+### N°lenguas nativas
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=c_lenguas, y=p_alfabetizacion))
+scatter2 = base + geom_point()
+library(ggrepel)
+scatterText2 = scatter2 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="N° de lenguas originarias habladas en el departamento", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre porcentaje de alfabetización y n° de lenguas originarias")
+scatterText2
+
+```
+
+### % lenguas nativas
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_lenguasnativas, y=p_alfabetizacion))
+scatter3 = base + geom_point()
+library(ggrepel)
+scatterText3 = scatter3 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de población nativa que habla por lo menos una lengua originaria", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de población que habla por lo menos una lengua originaria")
+scatterText3
+```
+
+
+### Población femenina 
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_mujer, y=p_alfabetizacion))
+scatter4 = base + geom_point()
+library(ggrepel)
+scatterText4 = scatter4 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de población nativa femenina", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de población nativa femenina")
+scatterText4
+```
+
+### Población rural
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_rural, y=p_alfabetizacion))
+scatter5 = base + geom_point()
+library(ggrepel)
+scatterText5 = scatter5 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de población nativa rural", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de población nativa rural")
+scatterText5
+```
+
+### Discapacidad motora
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_motora, y=p_alfabetizacion))
+scatter6 = base + geom_point()
+library(ggrepel)
+scatterText6 = scatter6 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de población nativa con discapacidad motora", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de población nativa con discapacidad motora")
+scatterText6
+```
+
+### Discapacidad intelectual
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_intelectual, y=p_alfabetizacion))
+scatter7 = base + geom_point()
+library(ggrepel)
+scatterText7 = scatter7 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de población nativa con discapacidad intelectual", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de población nativa con discapacidad intelectual")
+scatterText7
+```
+
+
+### Acceso a internet
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_internet, y=p_alfabetizacion))
+scatter8 = base + geom_point()
+library(ggrepel)
+scatterText8 = scatter8 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="% de hogares con acceso a internet", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre % de alfabetización y % de hogares con acceso a internet")
+scatterText8
+```
+
+
+### Instituciones bilingues
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=data, aes(x=p_internet, y=EIB))
+scatter8 = base + geom_point()
+library(ggrepel)
+scatterText8 = scatter8 + geom_text_repel(aes(label=NOMBDEP),size=2)+labs(x="N° de EIBs en el departamento", 
+       y="Porcentaje de alfabetización")+ggtitle("Correlación entre porcentaje de alfabetización y n° de EIBs")
+scatterText8
+```
+
+
+Column {data-width=250} {.tabset}
+-----------------------------------------------------------------------
+
+
+### N°lenguas nativas
+
+```{r}
+cor.test(data$p_alfabetizacion, data$c_lenguas, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables no es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value (0.8) es mayor a 0.5. Además, el coeficiente (0.05) nos indica que existe una correlación de magnitud muy baja entre las variables.
+
+
+### % lenguas nativas
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_lenguasnativas, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value (0.002) es menor a 0.5. Además, el coeficiente (-0.5) nos indica que existe una correlación inversa de magnitud media entre las variables.
+
+
+### Población femenina
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_mujer, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value (0.03) es menor a 0.5. Además, el coeficiente (-0.4) nos indica que existe una correlación inversa de magnitud media entre las variables.
+
+
+### Población rural
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_rural, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value es mucho menor a 0.5. Además, el coeficiente (-0.8) nos indica que existe una correlación inversa de magnitud alta entre las variables.
+
+
+### Discapacidad motora
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_motora, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables no es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value (0.58) es mayor a 0.5. Además, el coeficiente (0.1) nos indica que existe una correlación de magnitud baja entre las variables.
+
+
+### Discapacidad intelectual
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_intelectual, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables no es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value (0.7) es mayor a 0.5. Además, el coeficiente (-0.08) nos indica que existe una correlación inversa de magnitud muy baja entre las variables.
+
+
+### Acceso a internet
+
+```{r}
+cor.test(data$p_alfabetizacion, data$p_internet, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value es mucho menor a 0.5. Además, el coeficiente (0.7) nos indica que existe una correlación de magnitud alta entre las variables.
+
+
+### Instituciones bilingues
+
+```{r}
+cor.test(data$p_alfabetizacion, data$EIB, method = c("spearman"))
+```
+En test Spearman nos indica que la correlación entre ambas variables es estadísticamente significativa a un intervalo de confianza del 95%, dado que, el p-value es mucho menor a 0.5. Además, el coeficiente (-0.8) nos indica que existe una correlación inversa de magnitud alta entre las variables.
+
+
+
+4. Regresiones {data-icon="fa-signal"}
+===================================== 
+
+Column {data-width=500} {.tabset}
+-----------------------------------------------------------------------
+
+
+### Normalidad 1
+
+```{r}
+library(ggh4x)
+
+baseHist +
+  geom_histogram(aes(y =after_stat(density)),bins=8) +
+  stat_theodensity(colour = "red") 
+```
+
+
+
+
+### Normalidad 2
+
+```{r}
+library(ggpubr)
+ggqqplot(data$p_alfabetizacion)
+```
+
+
+
+
+### Tests de normalidad
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+testshapiro <- shapiro.test(data$p_alfabetizacion)
+
+testKS <- ks.test(data$p_alfabetizacion,'pnorm')
+
+resultados <- data %>%
+  summarise(testshapiro$p.value,
+            testKS$p.value,
+            testKS$statistic)
+resultados
+```
+
+* **Histograma:**
+
+
+En el histograma de la variable central podemos ver cómo la distribución del porcentaje de alfabetización no sigue la forma de una curva de distribución normal.
+
+
+* **Boxplot:**
+
+En la gráfica de normalidad observamos que los valores no se ajustan completamente a la línea recta de referencia, lo cual es un signo de no normalidad, pero aún no es claro. Es necesario aplicar tests de normalidad para confirmar dicha hipótesis:
+
+H0: Los datos siguen una hipótesis normal.
+
+
+* **Test shapiro:**
+
+El p.value del test shapiro es mucho menor a 0.05; por tanto se rechaza la hipótesis nula y se concluye que los datos no siguen una distribución normal.
+
+ De la misma forma, el p-value del test Kolmogorov-Smirnov (KS) es mucho menor a 0.05, por tanto, también se rechaza la hipótesis nula.
+
+ Debido a que nuestra variable central nompresenta una distribución normal, no se está cumpliendo con uno de los supuestos de la regresión gaussiana; por tanto, debemos aplicar una regresión poisson.
+
+
+Column {data-width=500} {.tabset}
+-----------------------------------------------------------------------
+
+### Regresión Poisson
+
+```{r}
+
+modelo1=formula(p_alfabetizacion~c_lenguas+p_lenguasnativas+p_mujer+p_rural+p_motora+p_intelectual+p_internet+EIB)
+
+library(knitr)
+library(modelsummary)
+rp1=glm(modelo1, data = data, 
+        offset=log(p_pueblosnativos), #exposure 
+        family = poisson(link = "log"))
+modelsPois = list('POISSON dependientes (I)' = rp1)
+
+# formula para limitar a 4 digitos decimales, 
+# sin que se muestre notación científica:
+formatoNum <- function(x) format(x, digits = 4, scientific = FALSE)
+
+modelsummary(modelsPois,
+            title = "Regresiones Poisson anidadas",
+             stars = TRUE,
+             output = "kableExtra")
+```
+
+A partir de la regresión Poisson podemos decir lo siguiente:
+
+
+- Todos los coeficientes del modelo I, con excepción de la variable "discapacidad motora", son signifcativos como mínimo a un 90% nivel de significancia.
+
+
+- Las variables "cantidad de lenguas nativas", "porcentaje de lenguas nativas", "porcentaje población femenina nativa", "discapacidad intelectual" tienen un efecto negativo en la variable central. 
+
+
+- Las variables "porcentaje de población nativa rural", "discapacidad motora", "acceso a internet" y "n° de EIBs" tienen un efecto positivo en la variable central.
+
+
+
+### Coeficientes exponenciados
+
+```{r}
+library(knitr)
+library(modelsummary)
+rp1=glm(modelo1, data = data, 
+        offset=log(p_pueblosnativos), #exposure 
+        family = poisson(link = "log"))
+modelsPois = list('POISSON dependientes (I)' = rp1)
+
+# formula para limitar a 4 digitos decimales, 
+# sin que se muestre notación científica:
+formatoNum <- function(x) format(x, digits = 4, scientific = FALSE)
+
+modelsummary(modelsPois,
+             fmt=formatoNum, # uso mi formula
+             exponentiate = T, # exponenciar!!!!!
+             statistic = 'conf.int',
+             title = "Regresión Poisson - coeficientes exponenciados",
+             stars = TRUE,
+             output = "kableExtra")
+
+```
+Se puede afirmar lo siguiente:
+
+
+- Por cada unidad que aumente la **cantidad de lenguas nativas** habladas en un departamento, el porcentaje de alfabetismo disminuiría en 1.8% en promedio.
+
+
+- Por cada unidad que aumente el **porcentaje de personas nativas que hablen por lo menos una lenguas originaria** en un departamento, el porcentaje de alfabetismo disminuiría en 1.3% en promedio.
+
+
+- Por cada unidad que aumente el **porcentaje de población nativa femenina** en un departamento, el porcentaje de alfabetismo disminuiría en 15.9% en promedio.
+
+
+- Por cada unidad que aumente la **cantidad dpoblación nativa residente en el área rural** en un departamento, el porcentaje de alfabetismo aumentaría en 3.4% en promedio.
+
+
+- Por cada unidad que aumente el **porcentaje de población nativa con una discapacidad motora** en un departamento, el porcentaje de alfabetismo aumentaría en 3.9% en promedio.
+
+
+- Por cada unidad que aumente el **porcentaje de población nativa con una discapacidad intelectual** en un departamento, el porcentaje de alfabetismo disminuiría en 61.4% en promedio.
+
+
+- Por cada unidad que aumente el **porcentaje de hogares con acceso a internet** en un departamento, el porcentaje de alfabetismo aumentaría en 10% en promedio.
+
+
+- Por cada unidad que aumente la **cantidad de instituciones EIB** en un departamento, el porcentaje de alfabetismo aumentaría en 1% en promedio.
+
+
+
+### Test de Equidispersión
+
+```{r}
+library(magrittr)
+library(AER)
+overdispersion=AER::dispersiontest(rp1,alternative='greater')$ p.value<0.05
+underdispersion=AER::dispersiontest(rp1,alternative='less')$ p.value<0.05
+# tabla
+testResult=as.data.frame(rbind(overdispersion,underdispersion))
+names(testResult)='Es probable?'
+testResult%>%kable(caption = "Test de Equidispersión")%>%kableExtra::kable_styling()
+```
+
+
+Se observa que el modelo presenta una sobredispersión, es decir, que el valor de la varianza es mayor al de la media. Por tanto,al no cumplirse uno de los supuestos de la regresión Poisson, recurriremos a probar una regresión QuasiPoisson y Binomial Negativa para luego evaluar cual es la mejor opción.
+
+### Comparando modelos 
+
+```{r}
+rqp = glm(modelo1, data = data,
+          offset=log(p_pueblosnativos),
+          family = quasipoisson(link = "log"))
+
+modelsQPexp=list('QuasiPoisson asegurados (II) exponenciado'=rqp)
+
+library(MASS)
+
+h2off=formula(p_alfabetizacion ~c_lenguas+p_lenguasnativas+p_mujer+p_rural+p_motora+p_intelectual+p_internet + EIB + offset(log(p_pueblosnativos)))
+
+rbn=glm.nb(h2off,data=data)
+
+modelsQP_BN=list('Poisson asegurados (II)'=rp1,
+                 'QuasiPoisson asegurados (II)'=rqp,
+                 'Binomial Negativa asegurados (II)'=rbn)
+
+
+modelsummary(modelsQP_BN,fmt=formatoNum,
+             exponentiate = T, 
+             statistic = 'conf.int',
+             title = "EXP() de la Regresiones Poisson, Quasi Poisson  y Binomial Negativa",
+             stars = TRUE,
+             output = "kableExtra")
+```
+
+* Mediante la regresión Poisson obtuvimos resultados estadísticamente significativos para todas las variables. No obstante, al realizar el test de equidispersión nos indicó que existía una sobredispersión, por lo que hicimos las regresiones respectivas y comparamos los modelos, resultando en la binomial negativa como la mejor opción. 
+
+
+* Podemos decir que la Binomial negativa es un mejor modelo por los valores del AIC, BIC y Log.Lik, los cuales nos indican la calidad de ajuste del modelo. Se ve una disminución significativa del AIC (de 407.7 a 258.7) y del BIC (de 418.7 a 270.8) cuando comparamos la regresión Poisson y la Binomial Negativa. Además, hay un aumento del Log.Lik. (de '194.847 a -119.326).
+
+
+* Comparando los coeficientes en este nuevo modelo y podemos concluir que los porcentajes de personas que hablan lenguas nativas, de población femenina, de personas que viven en el área rural, de personas que sufren una discapacidad intelectual y de hogares que tienen acceso a internet sí tienen un efecto estadísticamente significativo en el porcentaje de alfabetización de la población indígena y originaria por departamento.
+
+
+
+### Test ANOVA
+
+```{r}
+anova(rp1,rqp,rbn, test = "Chisq") %>%
+kable(caption = "Tabla ANOVA para comparar modelos")%>%kableExtra::kable_styling(full_width = FALSE)
+```
+
+El Test de ANOVA nos confirma que es la Binomial Negativa la que presenta la mayor caída del Deviance (de 231.6 a 25.4). Por tanto, esta es la mejor opción.
+
+
+### Comparando coeficientes
+
+```{r}
+sdVD=sd(data$p_alfabetizacion)
+sdVIs=apply(data[,c("EIB", "c_lenguas","p_lenguasnativas","p_mujer","p_rural","p_motora","p_intelectual","p_internet")],2,sd)
+DF=list(Poisson=sdVIs*coef(rp1)[c(2,3)]/sdVD,
+     CuasiPoisson=sdVIs*coef(rqp)[c(2,3)]/sdVD,
+     BinomNegativa=sdVIs*coef(rbn)[c(2,3)]/sdVD)%>%
+       data.frame()
+
+DF%>% kable(caption = "Coeficientes Standarizados (ordenar vía valores absolutos)")%>%
+          kableExtra::kable_styling(full_width = F)
+```
+
+Al estandarizar los coeficientes notamos que los predictores que tienen mayor efecto en el modelo son el número de EIB's, el porcentaje de personas nativas que hablan lenguas originarias, el porcentaje de población rural y el porcentaje de hogares con acceso a internet. Mientras que, el porcentaje de población nativa con discapacidad intelectual es el predictor que tiene menor efecto.
+
+
+
+5. Clusters {data-icon="fa-signal"}
+===================================== 
+
+Column {data-width=700} {.tabset}
+-----------------------------------------------------------------------
+
+### Datos
+
+```{r}
+library(BBmisc)
+
+boxplot(normalize(data[,c(2:11)],method='range',range=c(0,10)))
+```
+
+### Visualización Correlación 
+
+```{r}
+dontselect=c("NOMBDEP","p_pueblosnativos")
+select=setdiff(names(data),dontselect) 
+theData=data[,select]
+```
+
+
+```{r}
+library(polycor)
+corMatrix=polycor::hetcor(theData)$correlations
+```
+
+
+
+```{r}
+library(ggcorrplot)
+
+ggcorrplot(corMatrix)
+```
+
+
+```{r}
+row.names(theData)=data$NOMBDEP
+```
+
+```{r}
+library(cluster)
+g.dist = daisy(theData, metric="gower")
+```
+
+### Diana
+
+
+```{r}
+library(factoextra)
+res.diana <- hcut(g.dist, k = 3,hc_func='diana')
+theData$diana=res.diana$cluster
+
+```
+
+
+```{r}
+# Visualize
+fviz_dend(res.diana, cex = 0.7, horiz = T, main = "")
+```
+
+### silhouette
+
+```{r}
+fviz_silhouette(res.diana,print.summary = F)
+```
+
+### Preparación de dimensiones 
+
+
+```{r}
+silDIANA=data.frame(res.diana$silinfo$widths)
+silDIANA$NOMBDEP=row.names(silDIANA)
+poorDIANA=silDIANA[silDIANA$sil_width<0,'NOMBDEP']%>%sort()
+poorDIANA
+```
+
+
+```{r}
+aggregate(.~ diana, data=theData,mean)
+```
+
+
+
+```{r}
+theData$diana=dplyr::recode(theData$diana, `2` = 1, `1`=2,`3`=3)
+```
+
+
+```{r}
+data$dianapoor=data$NOMBDEP%in%poorDIANA
+data$diana=as.ordered(theData$diana)
+theData$diana=NULL
+```
+
+
+```{r}
+# k es la cantidad de dimensiones
+proyeccion = cmdscale(g.dist, k=2,add = T) 
+head(proyeccion$points,20)
+```
+
+
+
+```{r}
+# data frame prep:
+data$dim1 <- proyeccion$points[,1]
+data$dim2 <- proyeccion$points[,2]
+```
+
+### Graf. de distancias 
+
+
+```{r}
+library(ggrepel)
+base= ggplot(data,aes(x=dim1, y=dim2,label=row.names(theData))) 
+base + geom_text_repel(size=3, max.overlaps = 50,min.segment.length = unit(0, 'lines'))
+```
+
+### Graf. de distancias DIANA
+
+```{r}
+library(ggplot2)
+
+dianaPlot=base + geom_point(size=3,
+                            aes(color=diana)) + 
+          labs(title = "DIANA")+geom_text_repel(size=3, max.overlaps = 50,min.segment.length = unit(0, 'lines'))
+dianaPlot
+```
+
+
+Column {data-width=300} {.tabset}
+-----------------------------------------------------------------------
+
+### Conclusiones
+
+* La correlación entre variables bastante diversa.Se observaron correlaciones tanto negativas como positivas y la mayoría tenían un dependencia de fuerza media en su mayoría.
+
+
+* La estrategia jerárquica divisiva resultó ser la mejor estrategia de clusterización, al no presentar ningún departamento mal clusterizado y tener el valor de ancho de silueta promedio más alto (0.4), ello indica una calidad media-alta de la agrupación. La data se dividió en 3 grupos de clusters bastante homogéneos sin dejar ningún valor mal clusterizado. El primer cluster se caracteriza por departamentos más orientados hacia la costa del país. El segundo, por departamentos ubicados en la región de la sierra y partes de la selva. El tercero, por departamentos que se ubican en la región amazónica.
+
+
+* Debido a esta relación con su posición geográfica, consideramos que esta información es útil para que se apliquen políticas públicas en torno a la promoción de la alfabetización de las comunidades indígenes y nativas de forma más diferenciada y especializada, dado que, la situación de esta problemática en cáda grupo no muestra características similares.
+
+
+* No obstante, el modelo aún tiene espacio para mejora y sería útil que se reemplazaran las variables que no resultaron ser significativas por otras. Las variables escogidas en este trabajo están relacionadas con la condición del sujeto y sería interesante usar variables relacionadas con la agencia estatal,como por ejemplo, el número de personas u hogares de personas nativas beneficiadas por el Programa de Alfabetización Nacional (PAN) o el Programa Tambos.  
+
+
