@@ -1,5 +1,5 @@
 ## Diccionario de datos
-La siguiente tabla presenta información descriptiva sobre los datos que se encuentran en  la base de datos: "DATA".
+La siguiente tabla presenta información descriptiva sobre los datos que se encuentran en  la base de datos: "dataalfabetizacion".
 
 | Nombre de la variable  |  Función           | Escala |Indicador | Definición | Pregunta del Censo | Fuente de datos |
 |------------------------|--------------------|--------|----------|------------|--------------------|-----------------|
